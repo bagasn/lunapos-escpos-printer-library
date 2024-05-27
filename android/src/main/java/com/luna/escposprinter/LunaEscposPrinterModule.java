@@ -26,4 +26,10 @@ public class LunaEscposPrinterModule extends ReactContextBaseJavaModule {
         // TODO: Implement some actually useful functionality
         callback.invoke("Received numberArgument: " + numberArgument + " stringArgument: " + stringArgument);
     }
+
+    @ReactMethod
+    public void printout() {
+
+    }
+
 }
