@@ -179,6 +179,11 @@ public class EscPosPrinter extends EscPosPrinterSize {
         return this;
     }
 
+    public EscPosPrinter cutPaper() throws EscPosConnectionException {
+        this.printer.cutPaper();
+        return this;
+    }
+
     /**
      * Print a formatted text, cut the paper and open the cash box. Read the README.md for more information about text formatting options.
      *

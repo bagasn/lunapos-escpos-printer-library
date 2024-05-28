@@ -3,6 +3,8 @@ package com.luna.escposprinter.printer;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
@@ -16,6 +18,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.module.annotations.ReactModule;
+import com.luna.escposprinter.model.PrinterConfig;
 import com.luna.escposprinter.sdk.EscPosPrinter;
 import com.luna.escposprinter.sdk.connection.bluetooth.BluetoothConnection;
 import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
@@ -45,17 +48,17 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
         return NAME;
     }
 
-    private String TAG = this.getClass().getSimpleName();
+    private final String TAG = getName();
 
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private BluetoothAdapter mBluetoothAdapter;
-
-    private BluetoothDevice mBluetoothDevice;
 
     private BluetoothConnection mBluetoothConnection;
 
     private EscPosPrinter mPrinter;
+
+    private PrinterConfig mPrinterConfig;
 
     private BluetoothAdapter getBluetoothAdapter() {
         if (mBluetoothAdapter == null) {
@@ -65,60 +68,142 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
         return mBluetoothAdapter;
     }
 
+    private EscPosPrinter buildPrinterConnection() {
+        if (mPrinter == null) {
+            if (mPrinterConfig == null) {
+                return null;
+            }
+
+            if (mBluetoothConnection == null) {
+                mBluetoothConnection = new BluetoothConnection(
+                        getBluetoothDevice(mPrinterConfig.getDeviceAddress())
+                );
+            }
+
+            try {
+                mPrinter = new EscPosPrinter(mBluetoothConnection,
+                        203,
+                        mPrinterConfig.getPaperSize(),
+                        mPrinterConfig.getCharacterPerLine());
+            } catch (EscPosConnectionException e) {
+                Log.e(TAG, "buildPrinterConnection: Failed", e);
+                return null;
+            }
+        }
+        return mPrinter;
+    }
+
+    private BluetoothDevice getBluetoothDevice(String address) {
+        try {
+            return getBluetoothAdapter().getRemoteDevice(address);
+        } catch (Exception e) {
+            Log.e(TAG, "getBluetoothDevice: Failed", e);
+            return null;
+        }
+    }
+
     @ReactMethod
     public void isBluetoothEnabled(final Promise promise) {
         BluetoothAdapter adapter = getBluetoothAdapter();
         promise.resolve(adapter != null && adapter.isEnabled());
     }
 
+    /**
+     * config
+     *
+     * @cutPaperType: 0,
+     * @disconnectAfterPrint: true,
+     * @btAddress: '86:67:7A:B9:31:2C',
+     * @feedAfterPrint: 0,
+     * @paperSize: 58
+     */
     @ReactMethod
-    public void makeConnection(String bluetoothAddress, Promise promise) {
+    public void makeConnection(@Nullable ReadableMap options, Promise promise) {
         if (!isBluetoothPermissionsGranted()) {
             promise.reject("ERROR", "Bluetooth permission not accepted");
             return;
         }
 
-        try {
-            BluetoothDevice device = getBluetoothAdapter().getRemoteDevice(bluetoothAddress);
-            mBluetoothConnection = new BluetoothConnection(device);
+        mPrinterConfig = new PrinterConfig(options);
+
+        if (buildPrinterConnection() != null) {
             promise.resolve(true);
-        } catch (Exception e) {
-            promise.reject("Cannot connect to printer device", e);
-            Log.e(TAG, "makeConnection: ", e);
+        } else {
+            promise.reject("Error", "Failed when make connection to printer device");
         }
     }
 
-/*
-config: 
-                                            { cutPaperType: 0,
-                                              disconnectAfterPrint: true,
-                                              btAddress: '86:67:7A:B9:31:2C',
-                                              feedAfterPrint: 0,
-                                              paperSize: 58 },
-*/
+    @ReactMethod
+    public void disconnectPrinter(Promise promise) {
+        if (mPrinter != null) {
+            mPrinter.disconnectPrinter();
+        }
+
+        mPrinterConfig = null;
+        mPrinter = null;
+        mBluetoothConnection = null;
+        promise.resolve(true);
+    }
 
     @ReactMethod
-    public void printText(String printText, @Nullable ReadableMap options, final Promise promise) {
-        try {
-            mPrinter = new EscPosPrinter(mBluetoothConnection, 203, 48f, 32);
-            executorService.execute(() -> {
-                try {
-                    mPrinter.printFormattedText(printText, 10f);
-                    Thread.sleep(1000);
-                } catch (EscPosConnectionException
-                        | EscPosParserException
-                        | EscPosEncodingException
-                        | EscPosBarcodeException
-                        | InterruptedException e) {
-                    promise.reject(e.getMessage(), e);
-                }
-//                finally {
-////                    mPrinter.disconnectPrinter();
-//                }
-            });
-        } catch (EscPosConnectionException e) {
-            promise.reject(e.getMessage(), e);
+    public void printTextAndFeed(String printText, int feedAfterPrint, final Promise promise) {
+        startPrint(printText, feedAfterPrint, promise);
+    }
+
+    @ReactMethod
+    public void printText(String printText, final Promise promise) {
+        startPrint(printText, 0, promise);
+    }
+
+    @ReactMethod
+    public void printFeed(int feed, Promise promise) {
+        startPrint("", feed, promise);
+    }
+
+    @ReactMethod
+    public void cutPaper(Promise promise) {
+        EscPosPrinter printer = buildPrinterConnection();
+        if (printer == null) {
+            promise.reject("Error", "Cannot find connected printer");
+            return;
         }
+
+        executorService.execute(() -> {
+            try {
+                printer.cutPaper();
+                promise.resolve(true);
+            } catch (EscPosConnectionException e) {
+                Log.e(TAG, "cutPaper: Failed", e);
+                promise.reject("Cut paper failed");
+            }
+        });
+    }
+
+    private void startPrint(String printText, int feedAfterPrint, Promise promise) {
+        EscPosPrinter printer = buildPrinterConnection();
+        if (printer == null) {
+            promise.reject("Error", "Cannot find connected printer");
+            return;
+        }
+
+        executorService.execute(() -> {
+            try {
+                printer.printFormattedText(printText, feedAfterPrint);
+
+                if (mPrinterConfig.isDisconnectAfterPrint()) {
+                    Thread.sleep(1000);
+                }
+
+                promise.resolve(true);
+            } catch (EscPosConnectionException
+                    | EscPosParserException
+                    | EscPosEncodingException
+                    | EscPosBarcodeException
+                    | InterruptedException e) {
+                Log.e(TAG, "startPrint: Failed", e);
+                promise.reject("Cannot start printing", e);
+            }
+        });
     }
 
     private Boolean isBluetoothPermissionsGranted() {
@@ -156,7 +241,6 @@ config:
         }
 
         if (getCurrentActivity() != null && perms.length > 0) {
-//            ActivityCompat.requestPermissions(getCurrentActivity(), perms, 101);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 getCurrentActivity().requestPermissions(perms, 101);
             }
