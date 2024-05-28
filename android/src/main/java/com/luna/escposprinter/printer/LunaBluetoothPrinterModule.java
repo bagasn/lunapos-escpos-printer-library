@@ -161,6 +161,24 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void printImage(String base64, Promise promise) {
+        String printText = "[C]<img>" + base64 + "</img>";
+        startPrint(printText, 40, promise);
+    }
+
+    @ReactMethod
+    public void printQRCode(String content, promise) {
+        String printText = "[C]<qrcode size='20'>" + content + "</qrcode>\\n";
+        startPrint(printText, 0, promise);
+    }
+
+    @ReactMethod
+    public void printBarcode(String content, promise) {
+        String printText = "[C]<barcode>" + content + "</barcode>\\n";
+        startPrint(printText, 0, promise);
+    }
+
+    @ReactMethod
     public void cutPaper(Promise promise) {
         EscPosPrinter printer = buildPrinterConnection();
         if (printer == null) {
