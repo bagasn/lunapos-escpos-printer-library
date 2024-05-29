@@ -218,15 +218,30 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
             return;
         }
 
-        executorService.execute(() -> {
             try {
                 printer.cutPaper();
                 promise.resolve(true);
             } catch (EscPosConnectionException e) {
                 Log.e(TAG, "cutPaper: Failed", e);
-                promise.reject("Cut paper failed");
+                promise.resolve(false);
             }
-        });
+    }
+
+    @ReactMethod
+    public void openCashBox(Promise promise) {
+        EscPosPrinter printer = buildPrinterConnection();
+        if (printer == null) {
+            promise.reject("Error", "Cannot find connected printer");
+            return;
+        }
+
+        try {
+            printer.cutPaper();
+            promise.resolve(true);
+        } catch (EscPosConnectionException e) {
+            Log.e(TAG, "cutPopenCashBoxaper: Failed", e);
+            promise.resolve(false);
+        }
     }
 
     private void startPrint(String printText, int feedAfterPrint, Promise promise) {
