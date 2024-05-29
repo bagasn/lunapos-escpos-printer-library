@@ -6,7 +6,10 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
+import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -25,6 +28,7 @@ import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
 import com.luna.escposprinter.sdk.exceptions.EscPosConnectionException;
 import com.luna.escposprinter.sdk.exceptions.EscPosEncodingException;
 import com.luna.escposprinter.sdk.exceptions.EscPosParserException;
+import com.luna.escposprinter.sdk.textparser.PrinterTextParserImg;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -157,25 +161,53 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void printFeed(int feed, Promise promise) {
-        startPrint("", feed, promise);
+        startPrint("[L]", feed, promise);
     }
 
     @ReactMethod
     public void printImage(String base64, Promise promise) {
-        String printText = "[C]<img>" + base64 + "</img>";
-        startPrint(printText, 40, promise);
+        EscPosPrinter printer = buildPrinterConnection();
+        if (printer == null) {
+            promise.reject("Error", "Cannot find connected printer");
+            return;
+        }
+
+        executorService.execute(() -> {
+            try {
+                byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+
+                String printText = "[L]<img>" + PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap) + "</img>\n" +
+                        "[L]";
+
+                printer.printFormattedText(printText, 10f);
+
+                if (mPrinterConfig.isDisconnectAfterPrint()) {
+                    Thread.sleep(100);
+                }
+
+                promise.resolve(true);
+            } catch (EscPosConnectionException
+                    | EscPosParserException
+                    | EscPosEncodingException
+                    | EscPosBarcodeException
+                    | InterruptedException e) {
+                Log.e(TAG, "startPrint: Failed", e);
+                promise.reject("Cannot start printing", e);
+            }
+        });
     }
 
     @ReactMethod
-    public void printQRCode(String content, promise) {
-        String printText = "[C]<qrcode size='20'>" + content + "</qrcode>\\n";
-        startPrint(printText, 0, promise);
+    public void printQRCode(String content, Promise promise) {
+        String printText = "[L]<qrcode size='25'>" + content + "</qrcode>\n[L]";
+        startPrint(printText, 10, promise);
     }
 
     @ReactMethod
-    public void printBarcode(String content, promise) {
-        String printText = "[C]<barcode>" + content + "</barcode>\\n";
-        startPrint(printText, 0, promise);
+    public void printBarcode(String content, Promise promise) {
+        String printText = "[C]<barcode height='10' type='128'>" + content + "</barcode>\n[L]";
+        startPrint(printText, 10, promise);
     }
 
     @ReactMethod
@@ -206,10 +238,10 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
         executorService.execute(() -> {
             try {
-                printer.printFormattedText(printText, feedAfterPrint);
+                printer.printFormattedText(printText, (float) feedAfterPrint);
 
                 if (mPrinterConfig.isDisconnectAfterPrint()) {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 }
 
                 promise.resolve(true);
