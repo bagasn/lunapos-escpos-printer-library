@@ -1,10 +1,10 @@
 package com.luna.escposprinter.model;
 
+import androidx.annotation.Nullable;
+
 import com.facebook.react.bridge.ReadableMap;
 
-public class PrinterConfig {
-
-    private String deviceAddress;
+abstract class PrinterConfig {
 
     private boolean isCutPaper = true;
 
@@ -16,20 +16,8 @@ public class PrinterConfig {
 
     private final int characterPerLine;
 
-    public PrinterConfig(String deviceAddress, int cutPaper, boolean isDisconnectAfterPrint, int paperFeed, int paperSize) {
-        this.deviceAddress = deviceAddress;
-        this.isCutPaper = (cutPaper == 1);
-        this.isDisconnectAfterPrint = isDisconnectAfterPrint;
-        this.paperFeed = (float) paperFeed;
-        this.paperSize = paperSize;
-
-        this.characterPerLine = generateCharacterPerLine(this.paperSize);
-    }
-
-    public PrinterConfig(ReadableMap options) {
+    public PrinterConfig(@Nullable ReadableMap options) {
         if (options != null) {
-            this.deviceAddress = options.getString("btAddress");
-
             int cutPaper = options.getInt("cutPaperType");
             this.isCutPaper = cutPaper == 1;
 
@@ -49,10 +37,6 @@ public class PrinterConfig {
             return 40;
         }
         return 32;
-    }
-
-    public String getDeviceAddress() {
-        return deviceAddress;
     }
 
     public boolean isCutPaper() {
