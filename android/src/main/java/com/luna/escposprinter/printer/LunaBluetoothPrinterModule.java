@@ -6,10 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Build;
-import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -21,14 +18,14 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.module.annotations.ReactModule;
-import com.luna.escposprinter.model.PrinterConfig;
+import com.luna.escposprinter.model.PrinterBluetoothConfig;
 import com.luna.escposprinter.sdk.EscPosPrinter;
 import com.luna.escposprinter.sdk.connection.bluetooth.BluetoothConnection;
 import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
 import com.luna.escposprinter.sdk.exceptions.EscPosConnectionException;
 import com.luna.escposprinter.sdk.exceptions.EscPosEncodingException;
 import com.luna.escposprinter.sdk.exceptions.EscPosParserException;
-import com.luna.escposprinter.sdk.textparser.PrinterTextParserImg;
+import com.luna.escposprinter.util.ConverterUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +59,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
     private EscPosPrinter mPrinter;
 
-    private PrinterConfig mPrinterConfig;
+    private PrinterBluetoothConfig mPrinterConfig;
 
     private BluetoothAdapter getBluetoothAdapter() {
         if (mBluetoothAdapter == null) {
@@ -128,7 +125,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
             return;
         }
 
-        mPrinterConfig = new PrinterConfig(options);
+        mPrinterConfig = new PrinterBluetoothConfig(options);
 
         if (buildPrinterConnection() != null) {
             promise.resolve(true);
@@ -178,10 +175,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
         executorService.execute(() -> {
             try {
-                byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-
-                String printText = "[C]<img>" + PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap) + "</img>\n" +
+                String printText = "[C]" + ConverterUtil.convertBase64ToBitmap(printer, base64) + "\n" +
                         "[L]";
 
                 printer.printFormattedText(printText, 5f);
