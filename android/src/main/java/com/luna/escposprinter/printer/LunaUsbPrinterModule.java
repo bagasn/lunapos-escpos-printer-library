@@ -19,16 +19,17 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.module.annotations.ReactModule;
-import com.luna.escposprinter.model.PrinterBluetoothConfig;
 import com.luna.escposprinter.model.PrinterUsbConfig;
 import com.luna.escposprinter.sdk.EscPosPrinter;
 import com.luna.escposprinter.sdk.connection.usb.UsbConnection;
+import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
 import com.luna.escposprinter.sdk.exceptions.EscPosConnectionException;
+import com.luna.escposprinter.sdk.exceptions.EscPosEncodingException;
+import com.luna.escposprinter.sdk.exceptions.EscPosParserException;
 import com.luna.escposprinter.util.ConverterUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -66,7 +67,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     private Promise mConnectionPromise;
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -76,17 +77,18 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
                 if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     try {
                         mUsbConnection = new UsbConnection(usbManager, usbDevice);
-                        mPrinter = getEscPosPrinter(mUsbConnection);
-                        if (mConnectionPromise != null) {
-                            mConnectionPromise.resolve(true);
-                        }
+                        mPrinter = getPrinter(mUsbConnection);
+                        setConnectionPromiseResolved(true);
                     } catch (EscPosConnectionException e) {
                         Log.e(TAG, "On received USB permission failed", e);
+                        setConnectionPromiseError("Cannot connect to USB Device",
+                                new Exception("Cannot connect to USB Device"));
                     }
                 } else {
-                    if (mConnectionPromise != null) {
-                        mConnectionPromise.reject("Error", "USB permission not granted");
-                    }
+                    setConnectionPromiseError(
+                            "USB Permission not accepted",
+                            new Exception("USB Permission not accepted")
+                    );
                 }
             }
         }
@@ -118,7 +120,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
         Log.i(TAG, "initBroadcastReceiver: Initialized");
     }
 
-    private EscPosPrinter getEscPosPrinter(UsbConnection connection) throws EscPosConnectionException {
+    private EscPosPrinter getPrinter(UsbConnection connection) throws EscPosConnectionException {
         if (mPrinter == null) {
             mPrinter = new EscPosPrinter(
                     connection,
@@ -128,6 +130,13 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
             );
         }
         return mPrinter;
+    }
+
+    private StringBuilder getPrinterTextBuilder() {
+        if (mTextToPrint == null) {
+            mTextToPrint = new StringBuilder();
+        }
+        return mTextToPrint;
     }
 
     @ReactMethod
@@ -158,7 +167,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void addImage(String base64encoded, Promise promise) {
         executorService.execute(() -> {
-            mTextToPrint.append("[C]")
+            getPrinterTextBuilder().append("[C]")
                     .append(ConverterUtil.convertBase64ToBitmap(mPrinter, base64encoded))
                     .append("\n[L]");
             promise.resolve(true);
@@ -167,40 +176,39 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void addText(String text, Promise promise) {
-        mTextToPrint.append(text);
-        mTextToPrint.append("\n");
+        getPrinterTextBuilder().append(text);
+        getPrinterTextBuilder().append("\n");
         promise.resolve(true);
     }
 
     @ReactMethod
     public void feedByLine(int lineSpace, Promise promise) {
         for (int i = 0; i < lineSpace; i++) {
-            mTextToPrint.append("\n[L]");
+            getPrinterTextBuilder().append("\n[L]");
         }
         promise.resolve(true);
     }
 
     @ReactMethod
     public void addBarcode(String content, Promise promise) {
-        mTextToPrint.append("[C]")
+        getPrinterTextBuilder().append("[C]")
                 .append("<barcode height='10' type='128'>")
                 .append(content)
                 .append("</barcode>");
 
-        mTextToPrint.append("\n")
+        getPrinterTextBuilder().append("\n")
                 .append("[L]");
         promise.resolve(true);
     }
 
     @ReactMethod
     public void addQrCode(String content, Promise promise) {
-        String printText = "[C]<qrcode size='25'>" + content + "</qrcode>\n[L]";
-        mTextToPrint.append("[C]")
+        getPrinterTextBuilder().append("[C]")
                 .append("<qrcode size='25'>")
                 .append(content)
                 .append("</qrcode>");
 
-        mTextToPrint.append("\n")
+        getPrinterTextBuilder().append("\n")
                 .append("[L]");
 
         promise.resolve(true);
@@ -208,8 +216,49 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void startPrint(Promise promise) {
-        // TODO: Add function to start printing
+        if (mPrinterConfig == null) {
+            promise.reject("Cannot find printer config",
+                    new Exception("Cannot find printer config"));
+            return;
+        }
+        EscPosPrinter printer;
+        try {
+            printer = getPrinter(mUsbConnection);
+        } catch (EscPosConnectionException e) {
+            Log.e(TAG, "startPrint: Failed", e);
+            promise.reject("Cannot access printer device", e);
+            return;
+        }
+
+        executorService.execute(() -> {
+            try {
+                String textToPrint = mTextToPrint.toString();
+
+                printer.printFormattedText(textToPrint, 10f);
+
+                if (mPrinterConfig.isCutPaper()) {
+                    printer.cutPaper();
+                }
+
+
+                promise.resolve(true);
+            } catch (EscPosConnectionException
+                    | EscPosParserException
+                    | EscPosEncodingException
+                    | EscPosBarcodeException e) {
+                Log.e(TAG, "startPrint: Failed", e);
+                promise.reject("Cannot start printing", e);
+            } finally {
+                doAfterPrint();
+            }
+        });
+    }
+
+    private void doAfterPrint() {
         mTextToPrint = null;
+        mPrinterConfig = null;
+        mUsbConnection = null;
+        mPrinter = null;
     }
 
     private UsbDevice getUsbDevice(Integer vendorId, Integer productId) {
@@ -239,6 +288,18 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
             return Collections.emptyList();
         }
         return new ArrayList<>(manager.getDeviceList().values());
+    }
+
+    private void setConnectionPromiseError(String message, Throwable e) {
+        if (mConnectionPromise != null) {
+            mConnectionPromise.reject(message, e);
+        }
+    }
+
+    private void setConnectionPromiseResolved(boolean isResolved) {
+        if (mConnectionPromise != null) {
+            mConnectionPromise.resolve(isResolved);
+        }
     }
 
 
