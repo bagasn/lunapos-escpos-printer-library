@@ -12,6 +12,7 @@ import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
 import com.luna.escposprinter.printer.LunaBluetoothPrinterModule;
+import com.luna.escposprinter.printer.LunaUsbPrinterModule;
 
 public class LunaEscposPrinterPackage implements ReactPackage {
     @Override
@@ -19,6 +20,7 @@ public class LunaEscposPrinterPackage implements ReactPackage {
         List<NativeModule> modules = new ArrayList<>();
         modules.add(new LunaEscposPrinterModule(reactContext));
         modules.add(new LunaBluetoothPrinterModule(reactContext));
+        modules.add(new LunaUsbPrinterModule(reactContext));
 
         return modules;
     }

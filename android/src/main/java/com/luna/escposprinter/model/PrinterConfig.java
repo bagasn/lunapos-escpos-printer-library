@@ -8,6 +8,8 @@ abstract class PrinterConfig {
 
     private boolean isCutPaper = true;
 
+    private boolean isOpenCashBox = true;
+
     private boolean isDisconnectAfterPrint = true;
 
     private float paperFeed = 10f;
@@ -21,9 +23,18 @@ abstract class PrinterConfig {
             int cutPaper = options.getInt("cutPaperType");
             this.isCutPaper = cutPaper == 1;
 
-            isDisconnectAfterPrint = options.getBoolean("disconnectAfterPrint");
-            paperFeed = options.getInt("feedAfterPrint");
-            paperSize = options.getInt("paperSize");
+            if (options.hasKey("isOpenCashDrawer")) {
+                isOpenCashBox = options.getBoolean("isOpenCashDrawer");
+            }
+            if (options.hasKey("disconnectAfterPrint")) {
+                isDisconnectAfterPrint = options.getBoolean("disconnectAfterPrint");
+            }
+            if (options.hasKey("feedAfterPrint")) {
+                paperFeed = options.getInt("feedAfterPrint");
+            }
+            if (options.hasKey("paperSize")) {
+                paperSize = options.getInt("paperSize");
+            }
         }
 
         this.characterPerLine = generateCharacterPerLine(paperSize);
@@ -41,6 +52,10 @@ abstract class PrinterConfig {
 
     public boolean isCutPaper() {
         return isCutPaper;
+    }
+
+    public boolean isOpenCashBox() {
+        return isOpenCashBox;
     }
 
     public boolean isDisconnectAfterPrint() {
