@@ -149,7 +149,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
         if (usbManager != null && usbDevice != null) {
             mUsbConnection = new UsbConnection(usbManager, usbDevice);
         } else {
-            promise.reject("Error", "Cannot make connection to printer");
+            promise.reject("Cannot make connection to printer", new Exception("Cannot make connection to printer"));
             return;
         }
 
@@ -167,7 +167,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void addImage(String base64encoded, Promise promise) {
         executorService.execute(() -> {
-            getPrinterTextBuilder().append("[C]")
+            getPrinterTextBuilder().append("\n[C]")
                     .append(ConverterUtil.convertBase64ToBitmap(mPrinter, base64encoded))
                     .append("\n[L]");
             promise.resolve(true);
@@ -176,6 +176,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void addText(String text, Promise promise) {
+        getPrinterTextBuilder().append("\n");
         getPrinterTextBuilder().append(text);
         getPrinterTextBuilder().append("\n");
         promise.resolve(true);
@@ -191,24 +192,24 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void addBarcode(String content, Promise promise) {
-        getPrinterTextBuilder().append("[C]")
+        getPrinterTextBuilder().append("\n[C]")
                 .append("<barcode height='10' type='128'>")
                 .append(content)
-                .append("</barcode>");
+                .append("</barcode>\n");
 
-        getPrinterTextBuilder().append("\n")
+        getPrinterTextBuilder()
                 .append("[L]");
         promise.resolve(true);
     }
 
     @ReactMethod
     public void addQrCode(String content, Promise promise) {
-        getPrinterTextBuilder().append("[C]")
+        getPrinterTextBuilder().append("\n[C]")
                 .append("<qrcode size='25'>")
                 .append(content)
-                .append("</qrcode>");
+                .append("</qrcode>\n");
 
-        getPrinterTextBuilder().append("\n")
+        getPrinterTextBuilder()
                 .append("[L]");
 
         promise.resolve(true);
@@ -233,13 +234,20 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
         executorService.execute(() -> {
             try {
                 String textToPrint = mTextToPrint.toString();
-
-                printer.printFormattedText(textToPrint, 10f);
+                Log.i(TAG, "STEP: Text to print\n" + textToPrint);
+                float printFeed = mPrinterConfig.getPaperFeed();
+                if (printFeed <= 0) {
+                    printFeed = 10f;
+                }
+                printer.printFormattedText(textToPrint, printFeed);
 
                 if (mPrinterConfig.isCutPaper()) {
                     printer.cutPaper();
                 }
 
+                if (mPrinterConfig.isOpenCashBox()) {
+                    printer.openCashBox();
+                }
 
                 promise.resolve(true);
             } catch (EscPosConnectionException
