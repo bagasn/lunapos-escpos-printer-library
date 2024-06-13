@@ -129,6 +129,12 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
         }
 
         mPrinterConfig = new PrinterBluetoothConfig(options);
+        if (mPrinter != null) {
+            try {
+                mPrinter.disconnectPrinter();
+                mPrinter = null;
+            } catch (Exception ignored) {}
+        }
 
         if (buildPrinterConnection() != null) {
             promise.resolve(true);
@@ -242,10 +248,10 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
         }
 
         try {
-            printer.cutPaper();
+            printer.openCashBox();
             promise.resolve(true);
         } catch (EscPosConnectionException e) {
-            Log.e(TAG, "cutPopenCashBoxaper: Failed", e);
+            Log.e(TAG, "openCashBox: Failed", e);
             promise.resolve(false);
         }
     }
