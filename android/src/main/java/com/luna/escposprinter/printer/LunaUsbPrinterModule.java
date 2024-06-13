@@ -183,7 +183,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
                 return;
             }
         } else {
-            promise.reject("Cannot make connection to printer", new Exception("Cannot make connection to printer"));
+            promise.reject("Tidak dapat melakukan koneksi ke printer device", new Exception("Cannot make connection to printer"));
             return;
         }
 
@@ -264,7 +264,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void startPrint(Promise promise) {
         if (mPrinterConfig == null) {
-            promise.reject("Cannot find printer config",
+            promise.reject("Konfigurasi printer tidak ditemukan",
                     new Exception("Cannot find printer config"));
             return;
         }

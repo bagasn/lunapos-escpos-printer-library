@@ -162,7 +162,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void printFeed(int feed, Promise promise) {
-        startPrint("[L]", feed, 100, promise);
+        startPrint("[L] ", feed, 100, promise);
     }
 
     @ReactMethod
@@ -191,7 +191,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                     | EscPosBarcodeException
                     | InterruptedException e) {
                 Log.e(TAG, "startPrint: Failed", e);
-                promise.reject("Cannot start printing", e);
+                promise.reject("Gagal mengirim data ke printer", e);
             }
         });
     }
@@ -242,7 +242,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
         }
     }
 
-    private void startPrint(String printText, int feedAfterPrint, long delay, Promise promise) {
+    private void startPrint(final String printText, int feedAfterPrint, long delay, Promise promise) {
         EscPosPrinter printer = buildPrinterConnection();
         if (printer == null) {
             promise.reject("Error", "Cannot find connected printer");
@@ -251,7 +251,11 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
         executorService.execute(() -> {
             try {
-                printer.printFormattedText(printText, (float) feedAfterPrint);
+                String textToPrint = printText;
+                if (!textToPrint.endsWith("[L]")) {
+                    textToPrint = textToPrint + "\n[L]";
+                }
+                printer.printFormattedText(textToPrint, (float) feedAfterPrint);
 
                 if (mPrinterConfig.isDisconnectAfterPrint()) {
                     Thread.sleep(delay);
