@@ -75,11 +75,14 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                 return null;
             }
 
-            if (mBluetoothConnection == null) {
-                mBluetoothConnection = new BluetoothConnection(
-                        getBluetoothDevice(mPrinterConfig.getDeviceAddress())
-                );
+            if (mBluetoothConnection != null) {
+                mBluetoothConnection.disconnect();
+                mBluetoothConnection = null;
             }
+
+            mBluetoothConnection = new BluetoothConnection(
+                    getBluetoothDevice(mPrinterConfig.getDeviceAddress())
+            );
 
             try {
                 mPrinter = new EscPosPrinter(mBluetoothConnection,
@@ -137,7 +140,12 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void disconnectPrinter(Promise promise) {
         if (mPrinter != null) {
-            mPrinter.disconnectPrinter();
+            try {
+                mPrinter.disconnectPrinter();
+                mBluetoothConnection.disconnect();
+            } catch (Exception e) {
+                Log.e(TAG, "disconnectPrinter: failed", e);
+            }
         }
 
         mPrinterConfig = null;

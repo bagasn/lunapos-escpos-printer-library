@@ -13,11 +13,14 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.module.annotations.ReactModule;
 import com.luna.escposprinter.model.PrinterUsbConfig;
 import com.luna.escposprinter.sdk.EscPosPrinter;
@@ -312,6 +315,21 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
         mPrinterConfig = null;
         mPrinter = null;
         mConnectionPromise = null;
+    }
+
+    @ReactMethod
+    public void getUSBDeviceList(Promise promise) {
+        List<UsbDevice> usbDevices = getDeviceList();
+        WritableArray pairedDeviceList = Arguments.createArray();
+        for (UsbDevice usbDevice : usbDevices) {
+            WritableMap deviceMap = Arguments.createMap();
+            deviceMap.putString("device_name", usbDevice.getDeviceName());
+            deviceMap.putInt("device_id", usbDevice.getDeviceId());
+            deviceMap.putInt("vendor_id", usbDevice.getVendorId());
+            deviceMap.putInt("product_id", usbDevice.getProductId());
+            pairedDeviceList.pushMap(deviceMap);
+        }
+        promise.resolve(pairedDeviceList);
     }
 
     private List<UsbDevice> getDeviceList() {
