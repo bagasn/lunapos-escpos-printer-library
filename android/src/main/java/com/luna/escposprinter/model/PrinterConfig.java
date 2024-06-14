@@ -12,7 +12,7 @@ abstract class PrinterConfig {
 
     private boolean isDisconnectAfterPrint = true;
 
-    private float paperFeed = 10f;
+    private float paperFeed = 0f;
 
     private int paperSize = 58;
 
@@ -45,7 +45,7 @@ abstract class PrinterConfig {
      **/
     private int generateCharacterPerLine(int paperSize) {
         if (paperSize == 80) {
-            return 40;
+            return 47;
         }
         return 32;
     }
@@ -71,8 +71,8 @@ abstract class PrinterConfig {
     }
 
     public float getPaperWidthMM() {
-        if (paperSize == 58) {
-            return 48f;
+        if (paperSize == 80) {
+            return 70f;
         }
         return 48f;
     }
