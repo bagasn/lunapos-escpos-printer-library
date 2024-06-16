@@ -242,7 +242,10 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void feedByLine(int lineSpace, Promise promise) {
         for (int i = 0; i < lineSpace; i++) {
-            getPrinterTextBuilder().append("\n[L]");
+            getPrinterTextBuilder().append("[L]");
+            if (i < lineSpace - 1) {
+                getPrinterTextBuilder().append("\n");
+            }
         }
         promise.resolve(true);
     }
@@ -260,7 +263,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void addQrCode(String content, Promise promise) {
         getPrinterTextBuilder().append("\n[C]")
-                .append("<qrcode size='25'>")
+                .append("<qrcode size='30'>")
                 .append(content)
                 .append("</qrcode>\n");
 

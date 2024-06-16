@@ -164,6 +164,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
     public void printTextAndFeed(String printText, int feedAfterPrint, final Promise promise) {
         String[] spliter = printText.split("\n");
         long delay = spliter.length * 50L;
+
         startPrint(printText, feedAfterPrint, delay, promise);
     }
 
@@ -171,12 +172,26 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
     public void printText(String printText, final Promise promise) {
         String[] spliter = printText.split("\n");
         long delay = spliter.length * 50L;
+
         startPrint(printText, 0, delay, promise);
     }
 
     @ReactMethod
     public void printFeed(int feed, Promise promise) {
         startPrint("[L] ", feed, 100, promise);
+    }
+
+    @ReactMethod
+    public void printFeedByLine(int lineSpace, Promise promise) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < lineSpace; i++) {
+            builder.append("[L]");
+            if (i < lineSpace - 1) {
+                builder.append("\n");
+            }
+        }
+
+        startPrint(builder.toString(), 0, lineSpace * 50L, promise);
     }
 
     @ReactMethod
@@ -195,7 +210,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                 printer.printFormattedText(printText, 5f);
 
                 if (mPrinterConfig.isDisconnectAfterPrint()) {
-                    Thread.sleep(200);
+                    Thread.sleep(200L);
                 }
 
                 promise.resolve(true);
@@ -213,13 +228,13 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void printQRCode(String content, Promise promise) {
         String printText = "[C]<qrcode size='25'>" + content + "</qrcode>\n[L]";
-        startPrint(printText, 10, 200L, promise);
+        startPrint(printText, 5, 200L, promise);
     }
 
     @ReactMethod
     public void printBarcode(String content, Promise promise) {
         String printText = "[C]<barcode height='10' type='128'>" + content + "</barcode>\n[L]";
-        startPrint(printText, 10, 200L, promise);
+        startPrint(printText, 5, 200L, promise);
     }
 
     @ReactMethod
@@ -270,10 +285,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                     textToPrint = textToPrint + "\n[L]";
                 }
 
-                int feedPrint = feedAfterPrint;
-                feedPrint += 8;
-
-                printer.printFormattedText(textToPrint, (float) feedPrint);
+                printer.printFormattedText(textToPrint, (float) feedAfterPrint);
 
                 if (mPrinterConfig.isDisconnectAfterPrint()) {
                     Thread.sleep(delay);
