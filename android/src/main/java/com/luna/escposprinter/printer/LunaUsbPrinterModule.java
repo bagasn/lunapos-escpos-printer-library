@@ -241,6 +241,9 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void feedByLine(int lineSpace, Promise promise) {
+        if (lineSpace > 0) {
+            getPrinterTextBuilder().append("\n");
+        }
         for (int i = 0; i < lineSpace; i++) {
             getPrinterTextBuilder().append("[L]");
             if (i < lineSpace - 1) {
