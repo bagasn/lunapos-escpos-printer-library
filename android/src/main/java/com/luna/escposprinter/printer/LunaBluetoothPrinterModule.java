@@ -133,7 +133,8 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
             try {
                 mPrinter.disconnectPrinter();
                 mPrinter = null;
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         if (buildPrinterConnection() != null) {
@@ -163,7 +164,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void printTextAndFeed(String printText, int feedAfterPrint, final Promise promise) {
         String[] spliter = printText.split("\n");
-        long delay = spliter.length * 50L;
+        long delay = spliter.length * 30L;
 
         startPrint(printText, feedAfterPrint, delay, promise);
     }
@@ -171,7 +172,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void printText(String printText, final Promise promise) {
         String[] spliter = printText.split("\n");
-        long delay = spliter.length * 50L;
+        long delay = spliter.length * 30L;
 
         startPrint(printText, 0, delay, promise);
     }
@@ -227,14 +228,14 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void printQRCode(String content, Promise promise) {
-        String printText = "[C]<qrcode size='25'>" + content + "</qrcode>\n[L]";
-        startPrint(printText, 5, 200L, promise);
+        String printText = "[C]<qrcode size='38'>" + content + "</qrcode>\n[L]";
+        startPrint(printText, 150, 200L, promise);
     }
 
     @ReactMethod
     public void printBarcode(String content, Promise promise) {
         String printText = "[C]<barcode height='10' type='128'>" + content + "</barcode>\n[L]";
-        startPrint(printText, 5, 200L, promise);
+        startPrint(printText, 50, 200L, promise);
     }
 
     @ReactMethod
@@ -285,7 +286,12 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                     textToPrint = textToPrint + "\n[L]";
                 }
 
-                printer.printFormattedText(textToPrint, (float) feedAfterPrint);
+                float printFeed = feedAfterPrint;
+                if (printFeed > 0) {
+                    printFeed = printFeed / 10f;
+                }
+
+                printer.printFormattedText(textToPrint, printFeed);
 
                 if (mPrinterConfig.isDisconnectAfterPrint()) {
                     Thread.sleep(delay);

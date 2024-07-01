@@ -266,7 +266,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void addQrCode(String content, Promise promise) {
         getPrinterTextBuilder().append("\n[C]")
-                .append("<qrcode size='30'>")
+                .append("<qrcode size='38'>")
                 .append(content)
                 .append("</qrcode>\n");
 
@@ -296,13 +296,20 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
             try {
                 String textToPrint = mTextToPrint.toString();
                 float printFeed = mPrinterConfig.getPaperFeed();
-                printFeed += 8;
+                if (printFeed > 0) {
+                    printFeed = printFeed / 10f;
+                }
+                printFeed += 8f;
 
                 printer.printFormattedText(textToPrint, printFeed);
 
-                printer.cutPaper();
+                if (mPrinterConfig.isCutPaper()) {
+                    printer.cutPaper();
+                }
 
-                printer.openCashBox();
+                if (mPrinterConfig.isOpenCashBox()) {
+                    printer.openCashBox();
+                }
 
                 promise.resolve(true);
             } catch (EscPosConnectionException

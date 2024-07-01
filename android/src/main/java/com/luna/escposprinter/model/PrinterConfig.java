@@ -21,7 +21,7 @@ abstract class PrinterConfig {
     public PrinterConfig(@Nullable ReadableMap options) {
         if (options != null) {
             int cutPaper = options.getInt("cutPaperType");
-            this.isCutPaper = cutPaper == 1;
+            this.isCutPaper = cutPaper == 0;
 
             if (options.hasKey("isOpenCashDrawer")) {
                 isOpenCashBox = options.getBoolean("isOpenCashDrawer");
@@ -45,7 +45,7 @@ abstract class PrinterConfig {
      **/
     private int generateCharacterPerLine(int paperSize) {
         if (paperSize == 80) {
-            return 47;
+            return 48;
         }
         return 32;
     }
