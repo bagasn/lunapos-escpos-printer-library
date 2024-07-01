@@ -21,6 +21,7 @@ public class LunaEscposPrinterPackage implements ReactPackage {
         modules.add(new LunaEscposPrinterModule(reactContext));
         modules.add(new LunaBluetoothPrinterModule(reactContext));
         modules.add(new LunaUsbPrinterModule(reactContext));
+        modules.add(new BluetoothManagerModule(reactContext));
 
         return modules;
     }
