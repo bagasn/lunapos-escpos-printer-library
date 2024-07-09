@@ -9,12 +9,10 @@ import com.luna.escposprinter.sdk.textparser.PrinterTextParserImg;
 
 public class ConverterUtil {
 
-    public static String convertBase64ToBitmap(EscPosPrinter printer, String base64Encode) {
+    public static String convertBase64ToBitmap(EscPosPrinter printer, String base64Encode) throws NullPointerException {
         byte[] bytes = Base64.decode(base64Encode, Base64.DEFAULT);
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         return "<img>" + PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap) + "</img>";
     }
-
-
 
 }

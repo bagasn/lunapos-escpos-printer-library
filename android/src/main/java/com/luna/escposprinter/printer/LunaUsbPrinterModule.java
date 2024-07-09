@@ -223,12 +223,18 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void addImage(String base64encoded, Promise promise) {
-        executorService.execute(() -> {
-            getPrinterTextBuilder().append("\n[C]")
-                    .append(ConverterUtil.convertBase64ToBitmap(mPrinter, base64encoded))
-                    .append("\n[L]");
-            promise.resolve(true);
-        });
+        String image;
+        try {
+            image = ConverterUtil.convertBase64ToBitmap(mPrinter, base64encoded);
+        } catch (Exception e) {
+            promise.resolve(false);
+            Log.e(TAG, "addImage: Failed to add image", e);
+            return;
+        }
+        getPrinterTextBuilder().append("\n[C]")
+                .append(image)
+                .append("\n[L]");
+        promise.resolve(true);
     }
 
     @ReactMethod
