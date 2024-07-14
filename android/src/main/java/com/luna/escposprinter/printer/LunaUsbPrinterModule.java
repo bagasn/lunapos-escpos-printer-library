@@ -23,6 +23,7 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.module.annotations.ReactModule;
 import com.luna.escposprinter.model.PrinterUsbConfig;
+import com.luna.escposprinter.sdk.EscPosCharsetEncoding;
 import com.luna.escposprinter.sdk.EscPosPrinter;
 import com.luna.escposprinter.sdk.connection.usb.UsbConnection;
 import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
@@ -141,7 +142,8 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
                     connection,
                     203,
                     mPrinterConfig.getPaperWidthMM(),
-                    mPrinterConfig.getCharacterPerLine()
+                    mPrinterConfig.getCharacterPerLine(),
+                    new EscPosCharsetEncoding("GBK", 0)
             );
         }
         return mPrinter;

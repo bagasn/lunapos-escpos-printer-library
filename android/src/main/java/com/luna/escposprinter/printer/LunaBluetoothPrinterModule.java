@@ -19,6 +19,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.module.annotations.ReactModule;
 import com.luna.escposprinter.model.PrinterBluetoothConfig;
+import com.luna.escposprinter.sdk.EscPosCharsetEncoding;
 import com.luna.escposprinter.sdk.EscPosPrinter;
 import com.luna.escposprinter.sdk.connection.bluetooth.BluetoothConnection;
 import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
@@ -88,7 +89,9 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                 mPrinter = new EscPosPrinter(mBluetoothConnection,
                         203,
                         mPrinterConfig.getPaperWidthMM(),
-                        mPrinterConfig.getCharacterPerLine());
+                        mPrinterConfig.getCharacterPerLine(),
+                        new EscPosCharsetEncoding("GBK", 0)
+                );
             } catch (EscPosConnectionException e) {
                 Log.e(TAG, "buildPrinterConnection: Failed", e);
                 return null;
