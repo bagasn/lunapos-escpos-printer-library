@@ -125,42 +125,46 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
      * @paperSize: 58
      */
     @ReactMethod
-    public void makeConnection(@Nullable ReadableMap options, Promise promise) {
+    public void makeConnection(@Nullable ReadableMap options, final Promise promise) {
         if (!isBluetoothPermissionsGranted()) {
             promise.reject("ERROR", "Bluetooth permission not accepted");
             return;
         }
 
-        mPrinterConfig = new PrinterBluetoothConfig(options);
-        if (mPrinter != null) {
-            try {
-                mPrinter.disconnectPrinter();
-                mPrinter = null;
-            } catch (Exception ignored) {
+        executorService.execute(() -> {
+            mPrinterConfig = new PrinterBluetoothConfig(options);
+            if (mPrinter != null) {
+                try {
+                    mPrinter.disconnectPrinter();
+                    mPrinter = null;
+                } catch (Exception ignored) {
+                }
             }
-        }
 
-        if (buildPrinterConnection() != null) {
-            promise.resolve(true);
-        } else {
-            promise.reject("Error", "Failed when make connection to printer device");
-        }
+            if (buildPrinterConnection() != null) {
+                promise.resolve(true);
+            } else {
+                promise.reject("Error", "Failed when make connection to printer device");
+            }
+        });
     }
 
     @ReactMethod
     public void disconnectPrinter(Promise promise) {
-        if (mPrinter != null) {
-            try {
-                mPrinter.disconnectPrinter();
-                mBluetoothConnection.disconnect();
-            } catch (Exception e) {
-                Log.e(TAG, "disconnectPrinter: failed", e);
+        executorService.execute(() -> {
+            if (mPrinter != null) {
+                try {
+                    mPrinter.disconnectPrinter();
+                    mBluetoothConnection.disconnect();
+                } catch (Exception e) {
+                    Log.e(TAG, "disconnectPrinter: failed", e);
+                }
             }
-        }
 
-        mPrinterConfig = null;
-        mPrinter = null;
-        mBluetoothConnection = null;
+            mPrinterConfig = null;
+            mPrinter = null;
+            mBluetoothConnection = null;
+        });
         promise.resolve(true);
     }
 
@@ -200,13 +204,13 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void printImage(String base64, Promise promise) {
-        EscPosPrinter printer = buildPrinterConnection();
-        if (printer == null) {
-            promise.reject("Error", "Cannot find connected printer");
-            return;
-        }
-
         executorService.execute(() -> {
+            EscPosPrinter printer = buildPrinterConnection();
+            if (printer == null) {
+                promise.reject("Error", "Cannot find connected printer");
+                return;
+            }
+
             try {
                 String image;
                 try {
@@ -226,14 +230,9 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                 }
 
                 promise.resolve(true);
-            } catch (EscPosConnectionException
-                    | EscPosParserException
-                    | EscPosEncodingException
-                    | EscPosBarcodeException
-                    | InterruptedException
-                    | NullPointerException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "startPrint: Failed", e);
-                promise.reject("Gagal mengirim data ke printer", e);
+                promise.resolve(false);
             }
         });
     }
@@ -252,46 +251,47 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void cutPaper(Promise promise) {
-        EscPosPrinter printer = buildPrinterConnection();
-        if (printer == null) {
-            promise.reject("Error", "Cannot find connected printer");
-            return;
-        }
+        executorService.execute(() -> {
+            EscPosPrinter printer = buildPrinterConnection();
+            if (printer == null) {
+                return;
+            }
 
-        try {
-            printer.cutPaper();
-            promise.resolve(true);
-        } catch (EscPosConnectionException e) {
-            Log.e(TAG, "cutPaper: Failed", e);
-            promise.resolve(false);
-        }
+            try {
+                printer.cutPaper();
+                promise.resolve(true);
+            } catch (EscPosConnectionException e) {
+                Log.e(TAG, "cutPaper: Failed", e);
+                promise.resolve(false);
+            }
+        });
     }
 
     @ReactMethod
     public void openCashBox(Promise promise) {
-        EscPosPrinter printer = buildPrinterConnection();
-        if (printer == null) {
-            promise.reject("Error", "Cannot find connected printer");
-            return;
-        }
+        executorService.execute(() -> {
+            EscPosPrinter printer = buildPrinterConnection();
+            if (printer == null) {
+                return;
+            }
 
-        try {
-            printer.openCashBox();
-            promise.resolve(true);
-        } catch (EscPosConnectionException e) {
-            Log.e(TAG, "openCashBox: Failed", e);
-            promise.resolve(false);
-        }
+            try {
+                printer.openCashBox();
+                promise.resolve(true);
+            } catch (EscPosConnectionException e) {
+                Log.e(TAG, "openCashBox: Failed", e);
+                promise.resolve(false);
+            }
+        });
     }
 
     private void startPrint(final String printText, int feedAfterPrint, long delay, Promise promise) {
-        EscPosPrinter printer = buildPrinterConnection();
-        if (printer == null) {
-            promise.reject("Error", "Cannot find connected printer");
-            return;
-        }
-
         executorService.execute(() -> {
+            EscPosPrinter printer = buildPrinterConnection();
+            if (printer == null) {
+                return;
+            }
+
             try {
                 String textToPrint = printText;
                 if (!textToPrint.endsWith("[L]")) {
@@ -310,13 +310,9 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                 }
 
                 promise.resolve(true);
-            } catch (EscPosConnectionException
-                    | EscPosParserException
-                    | EscPosEncodingException
-                    | EscPosBarcodeException
-                    | InterruptedException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "startPrint: Failed", e);
-                promise.reject("Cannot start printing", e);
+                promise.resolve(false);
             }
         });
     }

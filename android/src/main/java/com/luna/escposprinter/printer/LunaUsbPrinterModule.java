@@ -209,18 +209,19 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     }
 
-    private void setupConnectedWithConnectedPrinter(UsbDevice device) {
-        try {
-            mUsbConnection = buildUsbConnection(device);
-            mUsbConnection.connect();
-            mPrinter = getPrinter(mUsbConnection);
-            setConnectionPromiseResolved(true);
-        } catch (EscPosConnectionException
-                | NullPointerException e) {
-            Log.e(TAG, "On received USB permission failed", e);
-            setConnectionPromiseError("Cannot connect to USB Device",
-                    new Exception("Cannot connect to USB Device"));
-        }
+    private void setupConnectedWithConnectedPrinter(final UsbDevice device) {
+        executorService.execute(() -> {
+            try {
+                mUsbConnection = buildUsbConnection(device);
+                mUsbConnection.connect();
+                mPrinter = getPrinter(mUsbConnection);
+                setConnectionPromiseResolved(true);
+            } catch (EscPosConnectionException | NullPointerException e) {
+                Log.e(TAG, "On received USB permission failed", e);
+                setConnectionPromiseError("Cannot connect to USB Device",
+                        new Exception("Cannot connect to USB Device"));
+            }
+        });
     }
 
     @ReactMethod
@@ -286,21 +287,21 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void startPrint(Promise promise) {
-        if (mPrinterConfig == null) {
-            promise.reject("Konfigurasi printer tidak ditemukan",
-                    new Exception("Cannot find printer config"));
-            return;
-        }
-        EscPosPrinter printer;
-        try {
-            printer = getPrinter(mUsbConnection);
-        } catch (EscPosConnectionException e) {
-            Log.e(TAG, "startPrint: Failed", e);
-            promise.reject("Cannot access printer device", e);
-            return;
-        }
-
         executorService.execute(() -> {
+            if (mPrinterConfig == null) {
+                promise.reject("Konfigurasi printer tidak ditemukan",
+                        new Exception("Cannot find printer config"));
+                return;
+            }
+            EscPosPrinter printer;
+            try {
+                printer = getPrinter(mUsbConnection);
+            } catch (EscPosConnectionException e) {
+                Log.e(TAG, "startPrint: Failed", e);
+                promise.reject("Cannot access printer device", e);
+                return;
+            }
+
             try {
                 String textToPrint = mTextToPrint.toString();
                 float printFeed = mPrinterConfig.getPaperFeed();
@@ -320,12 +321,9 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
                 }
 
                 promise.resolve(true);
-            } catch (EscPosConnectionException
-                    | EscPosParserException
-                    | EscPosEncodingException
-                    | EscPosBarcodeException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "startPrint: Failed", e);
-                promise.reject("Cannot start printing", e);
+                promise.reject("Failed to print", e);
             } finally {
                 doAfterPrint();
             }
