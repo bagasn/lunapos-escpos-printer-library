@@ -212,26 +212,19 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
             }
 
             try {
-                String image;
-                try {
-                    image = ConverterUtil.convertBase64ToBitmap(printer, base64);
-                } catch (Exception e) {
-                    Log.e(TAG, "printImage: Failed", e);
-                    promise.resolve(false);
-                    return;
+                String image = ConverterUtil.convertBase64ToBitmap(printer, base64);
+                if (!image.isEmpty()) {
+                    String printText = "[C]" + image + "\n[L]";
+
+                    printer.printFormattedText(printText, 5f);
+
+                    if (mPrinterConfig.isDisconnectAfterPrint()) {
+                        Thread.sleep(200L);
+                    }
                 }
-                String printText = "[C]" + image + "\n" +
-                        "[L]";
-
-                printer.printFormattedText(printText, 5f);
-
-                if (mPrinterConfig.isDisconnectAfterPrint()) {
-                    Thread.sleep(200L);
-                }
-
                 promise.resolve(true);
             } catch (Exception e) {
-                Log.e(TAG, "startPrint: Failed", e);
+                Log.e(TAG, "printImage: Failed", e);
                 promise.resolve(false);
             }
         });
