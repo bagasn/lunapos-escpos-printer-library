@@ -132,7 +132,11 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     private void initBroadcastReceiver() {
         IntentFilter intentFilter = new IntentFilter(ACTION_USB_PERMISSION);
         intentFilter.addAction(ACTION_USB_PERMISSION);
-        getReactApplicationContext().registerReceiver(broadcastReceiver, intentFilter);
+        if (Build.VERSION.SDK_INT >= 33) {
+            getReactApplicationContext().registerReceiver(broadcastReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+        } else {
+            getReactApplicationContext().registerReceiver(broadcastReceiver, intentFilter);
+        }
         Log.i(TAG, "initBroadcastReceiver: Initialized");
     }
 
@@ -188,12 +192,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
             return;
         }
 
-        PendingIntent permissionIntent = PendingIntent.getBroadcast(
-                getReactApplicationContext(),
-                0,
-                new Intent(ACTION_USB_PERMISSION),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0
-        );
+        PendingIntent permissionIntent = getPendingIntent();
 
         mConnectionPromise = promise;
         executorService.execute(() -> {
@@ -207,6 +206,24 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
             }
         });
 
+    }
+
+    PendingIntent getPendingIntent() {
+        int flag;
+        if (Build.VERSION.SDK_INT >= 33) {
+            flag = PendingIntent.FLAG_NO_CREATE;
+        } else if (Build.VERSION.SDK_INT >= 31) {
+            flag = PendingIntent.FLAG_MUTABLE;
+        } else {
+            flag = 0;
+        }
+
+        return PendingIntent.getBroadcast(
+                getReactApplicationContext(),
+                0,
+                new Intent(ACTION_USB_PERMISSION),
+                flag
+        );
     }
 
     private void setupConnectedWithConnectedPrinter(final UsbDevice device) {
