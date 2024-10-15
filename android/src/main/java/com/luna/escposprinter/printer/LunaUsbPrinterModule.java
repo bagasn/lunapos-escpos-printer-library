@@ -209,20 +209,23 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     }
 
     PendingIntent getPendingIntent() {
-        int flag;
-        if (Build.VERSION.SDK_INT >= 33) {
-            flag = PendingIntent.FLAG_NO_CREATE;
-        } else if (Build.VERSION.SDK_INT >= 31) {
-            flag = PendingIntent.FLAG_MUTABLE;
-        } else {
-            flag = 0;
-        }
+//        if (Build.VERSION.SDK_INT >= 33) {
+//            return PendingIntent.getBroadcast(
+//                    getReactApplicationContext(),
+//                    0,
+//                    new Intent(ACTION_USB_PERMISSION),
+//                    PendingIntent.FLAG_MUTABLE
+//            );
+//        }
 
         return PendingIntent.getBroadcast(
                 getReactApplicationContext(),
                 0,
                 new Intent(ACTION_USB_PERMISSION),
-                flag
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ?
+                        PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE :
+                        PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_ONE_SHOT
+                //Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0
         );
     }
 
