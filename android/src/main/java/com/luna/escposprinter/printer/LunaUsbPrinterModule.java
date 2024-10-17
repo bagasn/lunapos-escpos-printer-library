@@ -76,13 +76,17 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            if (action == null) {
+                return;
+            }
+
             if (action.equals(ACTION_USB_PERMISSION)) {
                 UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     setupConnectedWithConnectedPrinter(usbDevice);
                 } else {
                     setConnectionPromiseError(
-                            "Izin meng-akses printer tidak dibolehkan",
+                            "Memerlukan izin device printer",
                             new Exception("USB Permission not accepted")
                     );
                 }
@@ -209,23 +213,13 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
     }
 
     PendingIntent getPendingIntent() {
-//        if (Build.VERSION.SDK_INT >= 33) {
-//            return PendingIntent.getBroadcast(
-//                    getReactApplicationContext(),
-//                    0,
-//                    new Intent(ACTION_USB_PERMISSION),
-//                    PendingIntent.FLAG_MUTABLE
-//            );
-//        }
-
         return PendingIntent.getBroadcast(
                 getReactApplicationContext(),
                 0,
                 new Intent(ACTION_USB_PERMISSION),
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ?
-                        PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE :
+                        PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE :
                         PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_ONE_SHOT
-                //Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0
         );
     }
 
