@@ -2,7 +2,7 @@
 
 import { NativeModules } from 'react-native';
 
-const { LunaEscposPrinter, LunaBluetoothPrinter, LunaUsbPrinter, BluetoothManagerModule } = NativeModules;
+const { LunaEscposPrinter, LunaBluetoothPrinter, LunaUsbPrinter, LunaBluetoothManager } = NativeModules;
 
-export { LunaBluetoothPrinter, LunaUsbPrinter, BluetoothManagerModule };
+export { LunaBluetoothPrinter, LunaUsbPrinter, LunaBluetoothManager };
 export default LunaEscposPrinter;

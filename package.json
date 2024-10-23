@@ -1,7 +1,7 @@
 {
   "name": "rn-luna-escpos-printer",
   "title": "ReactNative Luna Escpos Printer",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "TODO",
   "main": "index.js",
   "files": [
