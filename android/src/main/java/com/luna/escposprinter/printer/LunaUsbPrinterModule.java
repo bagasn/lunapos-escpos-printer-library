@@ -1,5 +1,6 @@
 package com.luna.escposprinter.printer;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -26,17 +27,12 @@ import com.luna.escposprinter.model.PrinterUsbConfig;
 import com.luna.escposprinter.sdk.EscPosCharsetEncoding;
 import com.luna.escposprinter.sdk.EscPosPrinter;
 import com.luna.escposprinter.sdk.connection.usb.UsbConnection;
-import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
 import com.luna.escposprinter.sdk.exceptions.EscPosConnectionException;
-import com.luna.escposprinter.sdk.exceptions.EscPosEncodingException;
-import com.luna.escposprinter.sdk.exceptions.EscPosParserException;
 import com.luna.escposprinter.util.ConverterUtil;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -80,14 +76,14 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
                 return;
             }
 
-            if (action.equals(ACTION_USB_PERMISSION)) {
+            if (ACTION_USB_PERMISSION.equals(action)) {
                 UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     setupConnectedWithConnectedPrinter(usbDevice);
                 } else {
                     setConnectionPromiseError(
                             "Memerlukan izin device printer",
-                            new Exception("USB Permission not accepted")
+                            new Exception("Memerlukan izin device printer")
                     );
                 }
             }
@@ -133,9 +129,11 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
         return mUsbDevice;
     }
 
+
     private void initBroadcastReceiver() {
         IntentFilter intentFilter = new IntentFilter(ACTION_USB_PERMISSION);
         intentFilter.addAction(ACTION_USB_PERMISSION);
+
         if (Build.VERSION.SDK_INT >= 33) {
             getReactApplicationContext().registerReceiver(broadcastReceiver, intentFilter, Context.RECEIVER_EXPORTED);
         } else {
@@ -196,37 +194,38 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
             return;
         }
 
-        PendingIntent permissionIntent = getPendingIntent();
+        PendingIntent permissionIntent = getPermissionUsbIntent();
 
         mConnectionPromise = promise;
-        executorService.execute(() -> {
-            try {
-                Thread.sleep(500);
-                usbManager.requestPermission(usbDevice, permissionIntent);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "makeConnection: failed", e);
-            } finally {
-                Log.i(TAG, "makeConnection: Requesting permission for USB");
-            }
-        });
+        try {
+            usbManager.requestPermission(usbDevice, permissionIntent);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "makeConnection: failed", e);
+        } finally {
+            Log.i(TAG, "makeConnection: Requesting permission for USB");
+        }
 
     }
 
-    PendingIntent getPendingIntent() {
+    PendingIntent getPermissionUsbIntent() {
         return PendingIntent.getBroadcast(
                 getReactApplicationContext(),
                 0,
                 new Intent(ACTION_USB_PERMISSION),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ?
-                        PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE :
-                        PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_ONE_SHOT
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0
         );
     }
 
     private void setupConnectedWithConnectedPrinter(final UsbDevice device) {
         executorService.execute(() -> {
             try {
-                mUsbConnection = buildUsbConnection(device);
+                UsbDevice currentDevice;
+                if (device == null) {
+                    currentDevice = getUsbDevice(mPrinterConfig.getDeviceId(), mPrinterConfig.getProductId());
+                } else {
+                    currentDevice = device;
+                }
+                mUsbConnection = buildUsbConnection(currentDevice);
                 mUsbConnection.connect();
                 mPrinter = getPrinter(mUsbConnection);
                 setConnectionPromiseResolved(true);
