@@ -197,14 +197,7 @@ public class LunaUsbPrinterModule extends ReactContextBaseJavaModule {
         PendingIntent permissionIntent = getPermissionUsbIntent();
 
         mConnectionPromise = promise;
-        try {
-            usbManager.requestPermission(usbDevice, permissionIntent);
-        } catch (InterruptedException e) {
-            Log.e(TAG, "makeConnection: failed", e);
-        } finally {
-            Log.i(TAG, "makeConnection: Requesting permission for USB");
-        }
-
+        usbManager.requestPermission(usbDevice, permissionIntent);
     }
 
     PendingIntent getPermissionUsbIntent() {
