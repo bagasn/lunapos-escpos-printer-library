@@ -216,7 +216,7 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                 if (!image.isEmpty()) {
                     String printText = "[C]" + image + "\n[L]";
 
-                    printer.printFormattedText(printText, 5f);
+                    printer.printFormattedText(printText, 1f);
 
                     if (mPrinterConfig.isDisconnectAfterPrint()) {
                         Thread.sleep(200L);
