@@ -19,9 +19,4 @@ public class PrinterNetworkConfig extends PrinterConfig {
         return ipAddress;
     }
 
-    @Override
-    public int getCharacterPerLine() {
-        return super.getCharacterPerLine() / 2;
-    }
-
 }

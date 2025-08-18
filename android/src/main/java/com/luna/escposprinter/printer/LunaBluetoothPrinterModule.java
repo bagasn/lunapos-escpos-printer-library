@@ -19,9 +19,11 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.module.annotations.ReactModule;
 import com.luna.escposprinter.model.PrinterBluetoothConfig;
+import com.luna.escposprinter.model.PrinterNetworkConfig;
 import com.luna.escposprinter.sdk.EscPosCharsetEncoding;
 import com.luna.escposprinter.sdk.EscPosPrinter;
 import com.luna.escposprinter.sdk.connection.bluetooth.BluetoothConnection;
+import com.luna.escposprinter.sdk.connection.tcp.TcpConnection;
 import com.luna.escposprinter.sdk.exceptions.EscPosBarcodeException;
 import com.luna.escposprinter.sdk.exceptions.EscPosConnectionException;
 import com.luna.escposprinter.sdk.exceptions.EscPosEncodingException;
@@ -273,6 +275,43 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
                 promise.resolve(true);
             } catch (EscPosConnectionException e) {
                 Log.e(TAG, "openCashBox: Failed", e);
+                promise.resolve(false);
+            }
+        });
+    }
+
+    @ReactMethod
+    public void printCaptainOrder(String printText, Promise promise) {
+        String[] spliter = printText.split("\n");
+        long delay = spliter.length * 30L;
+
+        Log.i(TAG, "printCaptainOrder: \n" + printText);
+
+        startPrintCaptainOrder(printText, 0, delay, promise);
+    }
+
+    private void startPrintCaptainOrder(final String printText, int feedAfterPrint, long delay, Promise promise) {
+        executorService.execute(() -> {
+            EscPosPrinter printer = buildPrinterConnection();
+            if (printer == null) {
+                return;
+            }
+
+            try {
+                float printFeed = feedAfterPrint;
+                if (printFeed > 0) {
+                    printFeed = printFeed / 10f;
+                }
+
+                printer.printFormattedText(printText, printFeed);
+
+                if (mPrinterConfig.isDisconnectAfterPrint()) {
+                    Thread.sleep(delay);
+                }
+
+                promise.resolve(true);
+            } catch (Exception e) {
+                Log.e(TAG, "startPrint: Failed", e);
                 promise.resolve(false);
             }
         });
