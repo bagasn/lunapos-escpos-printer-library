@@ -287,10 +287,10 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
 
         Log.i(TAG, "printCaptainOrder: \n" + printText);
 
-        startPrintCaptainOrder(printText, 0, delay, promise);
+        startPrintCaptainOrder(printText, delay, promise);
     }
 
-    private void startPrintCaptainOrder(final String printText, int feedAfterPrint, long delay, Promise promise) {
+    private void startPrintCaptainOrder(final String printText, long delay, Promise promise) {
         executorService.execute(() -> {
             EscPosPrinter printer = buildPrinterConnection();
             if (printer == null) {
@@ -298,12 +298,8 @@ public class LunaBluetoothPrinterModule extends ReactContextBaseJavaModule {
             }
 
             try {
-                float printFeed = feedAfterPrint;
-                if (printFeed > 0) {
-                    printFeed = printFeed / 10f;
-                }
-
-                printer.printFormattedText(printText, printFeed);
+                printer.printFormattedText(printText, 10);
+                Log.i(TAG, "startPrintCaptainOrder: \n" + printText);
 
                 if (mPrinterConfig.isDisconnectAfterPrint()) {
                     Thread.sleep(delay);

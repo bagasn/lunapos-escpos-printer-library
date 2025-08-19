@@ -68,39 +68,44 @@ public class LunaNetworkPrinterModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void printCaptainOrder(ReadableMap option, String textToPrint, Promise promise) {
-        try {
-            PrinterNetworkConfig config = new PrinterNetworkConfig(option);
+        executorService.execute(() -> {
+            try {
+                PrinterNetworkConfig config = new PrinterNetworkConfig(option);
 
-            TcpConnection connection = new TcpConnection(
-                    config.getIpAddress(),
-                    9100,
-                    30
-            );
+                TcpConnection connection = new TcpConnection(
+                        config.getIpAddress(),
+                        9100,
+                        200
+                );
 
-            EscPosPrinter printer = new EscPosPrinter(
-                    connection,
-                    203,
-                    config.getPaperWidthMM(),
-                    config.getCharacterPerLine(),
-                    new EscPosCharsetEncoding("GBK", 0)
-            );
+                EscPosPrinter printer = new EscPosPrinter(
+                        connection,
+                        203,
+                        config.getPaperWidthMM(),
+                        config.getCharacterPerLine(),
+                        new EscPosCharsetEncoding("GBK", 0)
+                );
 
-            /** Start Print */
-            printer.printFormattedText(textToPrint, config.getPaperFeed());
 
-            if (config.isCutPaper()) {
-                printer.cutPaper();
+                Log.i(TAG, "startPrintCaptainOrder: \n" + textToPrint);
+
+                /** Start Print */
+                if (config.isCutPaper()) {
+                    printer.printFormattedTextAndCut(textToPrint, config.getPaperFeed());
+                } else {
+                    printer.printFormattedText(textToPrint, config.getPaperFeed());
+                }
+
+                if (config.isOpenCashBox()) {
+                    printer.openCashBox();
+                }
+
+                promise.resolve(true);
+            } catch (Exception e) {
+                Log.e(TAG, "on print network", e);
+                promise.reject(e);
             }
-
-            if (config.isOpenCashBox()) {
-                printer.openCashBox();
-            }
-
-            promise.resolve(true);
-        } catch (Exception e) {
-            Log.e(TAG, "on print network", e);
-            promise.reject(e);
-        }
+        });
     }
 
     @ReactMethod
