@@ -1,10 +1,14 @@
 package com.luna.escposprinter.model;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import com.facebook.react.bridge.ReadableMap;
 
 abstract class PrinterConfig {
+
+    private final String TAG = getClass().getSimpleName();
 
     private boolean isCutPaper = true;
 
@@ -38,6 +42,8 @@ abstract class PrinterConfig {
         }
 
         this.characterPerLine = generateCharacterPerLine(paperSize);
+
+        // Log.d(TAG, "PrinterConfig: Cons\n" + toString());
     }
 
     /**
@@ -71,7 +77,7 @@ abstract class PrinterConfig {
     }
 
     public float getPaperWidthMM() {
-        if (paperSize == 80) {
+        if (paperSize >= 80) {
             return 70f;
         }
         return 48f;
@@ -79,5 +85,17 @@ abstract class PrinterConfig {
 
     public int getCharacterPerLine() {
         return characterPerLine;
+    }
+
+    @Override
+    public String toString() {
+        return "PrinterConfig{" +
+                "isCutPaper=" + isCutPaper +
+                ", isOpenCashBox=" + isOpenCashBox +
+                ", isDisconnectAfterPrint=" + isDisconnectAfterPrint +
+                ", paperFeed=" + paperFeed +
+                ", paperSize=" + paperSize +
+                ", characterPerLine=" + generateCharacterPerLine(paperSize) +
+                '}';
     }
 }
