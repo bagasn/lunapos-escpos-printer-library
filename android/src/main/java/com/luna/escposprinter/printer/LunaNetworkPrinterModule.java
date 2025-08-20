@@ -76,6 +76,8 @@ public class LunaNetworkPrinterModule extends ReactContextBaseJavaModule {
                     printer.openCashBox();
                 }
 
+                connection.disconnect();
+
                 promise.resolve(true);
             } catch (Exception e) {
                 Log.e(TAG, "on print network", e);
