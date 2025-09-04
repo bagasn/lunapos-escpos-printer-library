@@ -50,7 +50,7 @@ public class LunaNetworkPrinterModule extends ReactContextBaseJavaModule {
         executorService.execute(() -> {
             try {
                 PrinterNetworkConfig config = new PrinterNetworkConfig(option);
-               
+
                 TcpConnection connection = new TcpConnection(
                         config.getIpAddress(),
                         9100,
@@ -65,11 +65,18 @@ public class LunaNetworkPrinterModule extends ReactContextBaseJavaModule {
                         new EscPosCharsetEncoding("GBK", 0)
                 );
 
+                int feedValue = (int) config.getPaperFeed();
+                StringBuilder builderText = new StringBuilder();
+                builderText.append(textToPrint);
+                for (int i = 0; i < feedValue; i++) {
+                    builderText.append("\n[L]");
+                }
+
                 /** Start Print */
                 if (config.isCutPaper()) {
-                    printer.printFormattedTextAndCut(textToPrint, config.getPaperFeed());
+                    printer.printFormattedTextAndCut(builderText.toString(), 10f);
                 } else {
-                    printer.printFormattedText(textToPrint, config.getPaperFeed());
+                    printer.printFormattedText(builderText.toString(), 10f);
                 }
 
                 if (config.isOpenCashBox()) {
