@@ -74,9 +74,9 @@ public class LunaNetworkPrinterModule extends ReactContextBaseJavaModule {
 
                 /** Start Print */
                 if (config.isCutPaper()) {
-                    printer.printFormattedTextAndCut(builderText.toString(), 10f);
+                    printer.printFormattedTextAndCut(builderText.toString(), 0f);
                 } else {
-                    printer.printFormattedText(builderText.toString(), 10f);
+                    printer.printFormattedText(builderText.toString(), 0f);
                 }
 
                 if (config.isOpenCashBox()) {
